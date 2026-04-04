@@ -4,7 +4,7 @@ function initMARS() {
   }
   window.__marsHookInstalled = true;
 
-  var APP_ORIGIN = "https://github.com";
+  var APP_ORIGIN = "https://jakub-jedrusiak.github.io";
   var completed = false;
 
   var FIELD_DONE = "{ marsDone.sgqa }";
