@@ -1,0 +1,314 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>MaRS-IB CAT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        --bg: #ffffff;
+        --panel: #e4e4e4;
+        --card: #ffffff;
+        --text: #111827;
+        --ok: #2ecc71;
+        --bad: #e74c3c;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      #app {
+        width: min(1080px, calc(100vw - 1.5rem));
+        padding: 1rem;
+        min-height: 630px;
+      }
+
+      .mars-card {
+        background: var(--card);
+        border: 1px solid #d1d5db;
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+      }
+
+      .mars-topbar {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      }
+
+      #timer-label {
+        font-size: 3rem;
+        font-weight: 700;
+        line-height: 1;
+        min-height: 3rem;
+      }
+
+      .mars-stage {
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 0.8rem;
+        position: relative;
+      }
+
+      .marsMatrixDiv {
+        display: flex;
+        justify-content: center;
+        position: relative;
+        width: min(100%, 384px);
+        aspect-ratio: 1 / 1;
+        margin-bottom: 0.8rem;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .marsMatrixDiv > img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+
+      .answers-grid {
+        --main-width: 384px;
+        display: grid;
+        grid-template-columns: repeat(4, max-content);
+        justify-content: center;
+        gap: 0.5rem;
+      }
+
+      .answer-btn {
+        border: 2px solid transparent;
+        border-radius: 0;
+        width: calc(var(--main-width) * (1 / 3));
+        padding: 0;
+        background: #fff;
+        cursor: pointer;
+      }
+
+      .answer-btn:hover {
+        border-color: #0ea5e9;
+      }
+
+      .answer-btn:disabled {
+        cursor: default;
+        opacity: 0.75;
+      }
+
+      .answer-btn img {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        object-fit: contain;
+        border-radius: 0;
+        display: block;
+      }
+
+      .checkmark {
+        font-weight: 700;
+        opacity: 0;
+        font-size: 4rem;
+        line-height: 1;
+        min-height: 4rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0.2rem 0 0.5rem;
+        text-align: center;
+      }
+
+      .checkmark.right {
+        color: var(--ok);
+        opacity: 1;
+      }
+
+      .checkmark.wrong {
+        color: var(--bad);
+        opacity: 1;
+      }
+
+      .mars-plus {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8rem;
+        line-height: 1;
+        font-weight: 700;
+        color: #000;
+        opacity: 0;
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      .mars-plus.visible {
+        opacity: 1;
+      }
+
+      .mars-stage.fixation-active .marsMatrixDiv > img,
+      .mars-stage.fixation-active #answers,
+      .mars-stage.fixation-active #feedback {
+        visibility: hidden;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .start-card {
+        text-align: center;
+        padding: 2rem 1rem;
+      }
+
+      .start-card h1 {
+        margin-top: 0;
+      }
+
+      .start-btn {
+        border: 0;
+        border-radius: 10px;
+        background: #111827;
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 700;
+        padding: 0.75rem 1.5rem;
+        cursor: pointer;
+      }
+
+      .start-btn:disabled {
+        opacity: 0.7;
+        cursor: default;
+      }
+
+      .final-card {
+        text-align: center;
+      }
+
+      .final-metrics {
+        margin: 1rem auto 1.5rem;
+        max-width: 360px;
+        text-align: left;
+      }
+
+      .final-metrics p {
+        margin: 0.35rem 0;
+        font-size: 1.05rem;
+      }
+
+      .between-card {
+        text-align: center;
+        padding: 2rem 1rem;
+      }
+
+      .final-value {
+        font-size: 2rem;
+        font-weight: 700;
+      }
+
+      @media (max-width: 900px) {
+        #app {
+          width: 100vw;
+          padding: 0;
+        }
+
+        .mars-card {
+          border: 0;
+          border-radius: 0;
+          box-shadow: none;
+          padding: 0;
+        }
+
+        .mars-stage {
+          background: var(--panel);
+          border-radius: 0;
+          padding: 0;
+        }
+
+        .marsMatrixDiv {
+          margin: 3px auto;
+          width: min(calc(100% - 6px), 384px);
+        }
+
+        .marsMatrixDiv > img {
+          width: 100%;
+          height: 100%;
+        }
+
+        .answers-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          justify-content: stretch;
+        }
+
+        .answer-btn {
+          justify-self: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="mars-card">
+      <section id="start-section" class="start-card">
+        <h1>MaRS-IB CAT</h1>
+        <p id="vanity" style="color: gray">
+          CAT by Jakub Jędrusiak (2026), MaRs item bank by Cherchia, Fuhrmann et
+          al. (2019), IRT analysis by Zorowitz et al. (2024)
+        </p>
+        <button id="start-btn" class="start-btn" type="button">Start</button>
+      </section>
+
+      <section id="test-section" class="hidden">
+        <div class="mars-topbar">
+          <div id="timer-label" aria-live="polite"></div>
+        </div>
+        <div class="mars-stage">
+          <div class="marsMatrixDiv">
+            <img id="matrix-image" alt="Macierz bodźca" />
+            <div id="fixation-cross" class="mars-plus" aria-hidden="true">
+              +
+            </div>
+          </div>
+          <p id="feedback" class="checkmark" aria-live="polite"></p>
+          <div id="answers" class="answers-grid"></div>
+        </div>
+      </section>
+
+      <section id="between-section" class="hidden between-card">
+        <button id="start-test-btn" class="start-btn" type="button">
+          Start
+        </button>
+      </section>
+
+      <section id="final-section" class="hidden final-card">
+        <h1 id="final-message"></h1>
+        <div class="final-metrics" aria-live="polite">
+          <p><strong>Theta:</strong> <span id="final-theta">-</span></p>
+          <p><strong>SEM:</strong> <span id="final-sem">-</span></p>
+          <p>
+            <strong>Reliability:</strong> <span id="final-reliability">-</span>
+          </p>
+          <p>
+            <strong>Item count:</strong> <span id="final-item-count">-</span>
+          </p>
+        </div>
+        <button id="download-json-btn" class="start-btn" type="button" disabled>
+          ⬇ JSON
+        </button>
+      </section>
+    </div>
+    <script type="module" src="/src/index.js"></script>
+  </body>
+</html>

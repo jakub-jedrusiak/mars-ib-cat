@@ -1,0 +1,706 @@
+function initMARS() {
+  if (window.__marsHookInstalled) {
+    return;
+  }
+  window.__marsHookInstalled = true;
+
+  var APP_ORIGIN = "https://github.com";
+  var completed = false;
+
+  var FIELD_DONE = "{ marsDone.sgqa }";
+  var FIELD_FULL = "{ marsFullResults.sgqa }";
+  var FIELD_THETA = "{ marsData_theta.sgqa }";
+  var FIELD_SEM = "{ marsData_sem.sgqa }";
+  var FIELD_RELIABILITY = "{ marsData_reliability.sgqa }";
+  var FIELD_ITEMCOUNT = "{ marsData_itemCount.sgqa }";
+  var OPEN_BRACE = String.fromCharCode(123);
+  var CLOSE_BRACE = String.fromCharCode(125);
+  var COLON = String.fromCharCode(58);
+  var SEMICOLON = String.fromCharCode(59);
+  var EXCLAMATION = String.fromCharCode(33);
+  var resultFieldNames = null;
+  var STATUS_LANGUAGE = (
+    (document.documentElement && document.documentElement.lang) ||
+    "en"
+  )
+    .toLowerCase()
+    .slice(0, 2);
+  var STATUS_MESSAGES = {
+    en: {
+      complete: "Complete the embedded test to continue.",
+      invalidData: "Received invalid test data.",
+      testCompleted: "Test completed. You can continue.",
+      testPartial: "Test finished, but some result fields could not be saved.",
+      mustComplete: "You must complete the embedded test before continuing.",
+    },
+    pl: {
+      complete: "Ukończ załączony test, aby kontynuować.",
+      invalidData: "Otrzymano nieprawidłowe dane testu.",
+      testCompleted: "Test zakończony. Możesz kontynuować.",
+      testPartial:
+        "Test zakończony, ale nie udało się zapisać wszystkich pól wyniku.",
+      mustComplete: "Musisz ukończyć załączony test, zanim przejdziesz dalej.",
+    },
+  };
+
+  function getStatusMessage(key) {
+    var languageMessages =
+      STATUS_MESSAGES[STATUS_LANGUAGE] || STATUS_MESSAGES.en;
+
+    return languageMessages[key] || STATUS_MESSAGES.en[key] || key;
+  }
+
+  function uniquePreserveOrder(items) {
+    var out = [];
+    var seen = new Object();
+    var i = 0;
+
+    for (i = 0; i < items.length; i += 1) {
+      if (!seen[items[i]]) {
+        seen[items[i]] = true;
+        out.push(items[i]);
+      }
+    }
+
+    return out;
+  }
+
+  function getNumericFieldNamesFromFieldnamesInput() {
+    var fieldnamesInput = document.querySelector('input[name="fieldnames"]');
+    var raw = "";
+    var matches = null;
+    var i = 0;
+    var out = [];
+
+    if (!fieldnamesInput || typeof fieldnamesInput.value !== "string") {
+      return [];
+    }
+
+    raw = fieldnamesInput.value;
+    // Accept full LimeSurvey answer names, e.g.:
+    // 419621X2X5
+    // 419621X2X6theta
+    // 419621X2X6SQ001
+    matches = raw.match(/\d+X\d+X\d+[A-Za-z0-9_]*/g);
+    if (!matches) {
+      return [];
+    }
+
+    for (i = 0; i < matches.length; i += 1) {
+      if (/^\d+X\d+X\d+[A-Za-z0-9_]*$/.test(matches[i])) {
+        out.push(matches[i]);
+      }
+    }
+
+    return uniquePreserveOrder(out);
+  }
+
+  function getCurrentStepFieldName() {
+    var thisstepInput = document.querySelector('input[name="thisstep"]');
+    var thisstep = "";
+    var numericFromStep = null;
+    var statusEl = null;
+    var container = null;
+    var localFields = null;
+    var i = 0;
+
+    if (!thisstepInput || typeof thisstepInput.value !== "string") {
+      thisstep = "";
+    } else {
+      thisstep = thisstepInput.value;
+    }
+
+    numericFromStep = thisstep.match(/\d+X\d+X\d+/);
+    if (!numericFromStep) {
+      // Fallback 1: infer from the question containing #marsStatus
+      statusEl = document.getElementById("marsStatus");
+      if (statusEl) {
+        container = statusEl.closest(
+          ".question-container, .ls-question, .question-item, li[id*='javatbd'], div[id*='question']",
+        );
+        if (container) {
+          localFields = container.querySelectorAll(
+            "input[name], textarea[name]",
+          );
+          for (i = 0; i < localFields.length; i += 1) {
+            if (/^\d+X\d+X\d+[A-Za-z0-9_]*$/.test(localFields[i].name)) {
+              return localFields[i].name;
+            }
+          }
+        }
+      }
+
+      return null;
+    }
+
+    return numericFromStep[0];
+  }
+
+  function setStatus(text, isError) {
+    var el = document.getElementById("marsStatus");
+    if (!el) {
+      return;
+    }
+    el.textContent = text;
+    el.style.color = isError ? "#b00020" : "";
+  }
+
+  function injectHelperHideStyles() {
+    if (document.getElementById("mars-helper-hide-styles")) {
+      return;
+    }
+
+    var style = document.createElement("style");
+    style.id = "mars-helper-hide-styles";
+    style.textContent =
+      ".mars-helper-hidden" +
+      OPEN_BRACE +
+      "display" +
+      COLON +
+      "none " +
+      EXCLAMATION +
+      "important" +
+      SEMICOLON +
+      "visibility" +
+      COLON +
+      "hidden " +
+      EXCLAMATION +
+      "important" +
+      SEMICOLON +
+      CLOSE_BRACE;
+    document.head.appendChild(style);
+  }
+
+  function findQuestionContainer(el) {
+    if (!el) {
+      return null;
+    }
+
+    return el.closest(
+      ".question-container, .ls-question, .question-item, .question, li[id^='javatbd'], div[id^='question']",
+    );
+  }
+
+  function getHostQuestionContainer() {
+    var anchors = [
+      document.getElementById("marsFrame"),
+      document.getElementById("marsStatus"),
+    ];
+    var i = 0;
+    var anchor = null;
+    var container = null;
+
+    for (i = 0; i < anchors.length; i += 1) {
+      anchor = anchors[i];
+      if (!anchor) {
+        continue;
+      }
+      container = findQuestionContainer(anchor);
+      if (container) {
+        return container;
+      }
+
+      if (anchor.parentElement) {
+        return anchor.parentElement;
+      }
+    }
+
+    return null;
+  }
+
+  function getIntroQuestionContainer() {
+    var intro = document.getElementById("marsIntro");
+    var container = null;
+
+    if (!intro) {
+      return null;
+    }
+
+    container = findQuestionContainer(intro);
+    if (container) {
+      return container;
+    }
+
+    if (intro.parentElement) {
+      return intro.parentElement;
+    }
+
+    return null;
+  }
+
+  function hideMarsIframe() {
+    var iframe = document.getElementById("marsFrame");
+    var intro = document.getElementById("marsIntro");
+
+    if (!iframe) {
+      if (!intro) {
+        return;
+      }
+    } else {
+      iframe.style.display = "none";
+      iframe.setAttribute("aria-hidden", "true");
+    }
+
+    if (intro) {
+      intro.style.display = "none";
+      intro.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  function hideQuestionContainerByFieldName(fieldName) {
+    var field = null;
+    var container = null;
+    var hostContainer = getHostQuestionContainer();
+    var introContainer = getIntroQuestionContainer();
+
+    field = document.querySelector('[name="' + fieldName + '"]');
+    if (!field) {
+      field = document.getElementById(fieldName);
+    }
+    if (!field) {
+      field = document.getElementById("answer" + fieldName);
+    }
+    if (!field) {
+      return;
+    }
+
+    container = findQuestionContainer(field);
+    if (container) {
+      if (
+        (hostContainer &&
+          (container === hostContainer || container.contains(hostContainer))) ||
+        (introContainer &&
+          (container === introContainer || container.contains(introContainer)))
+      ) {
+        if (hostContainer) {
+          hostContainer.classList.remove("mars-helper-hidden");
+        }
+        if (introContainer) {
+          introContainer.classList.remove("mars-helper-hidden");
+        }
+        return;
+      }
+
+      container.classList.add("mars-helper-hidden");
+    }
+  }
+
+  function hideDiscoveredHelperQuestions() {
+    if (!resultFieldNames) {
+      return;
+    }
+
+    injectHelperHideStyles();
+    hideQuestionContainerByFieldName(resultFieldNames.done);
+    hideQuestionContainerByFieldName(resultFieldNames.theta);
+    hideQuestionContainerByFieldName(resultFieldNames.sem);
+    hideQuestionContainerByFieldName(resultFieldNames.reliability);
+    hideQuestionContainerByFieldName(resultFieldNames.itemCount);
+    hideQuestionContainerByFieldName(resultFieldNames.full);
+  }
+
+  function hideEarlyHelperQuestions() {
+    var allCandidates = getNumericFieldNamesFromFieldnamesInput();
+    var currentStepField = getCurrentStepFieldName();
+    var i = 0;
+
+    if (!allCandidates.length) {
+      return;
+    }
+
+    injectHelperHideStyles();
+
+    for (i = 0; i < allCandidates.length; i += 1) {
+      if (allCandidates[i] === currentStepField) {
+        continue;
+      }
+      hideQuestionContainerByFieldName(allCandidates[i]);
+    }
+  }
+
+  function extractTokenName(tokenString) {
+    // Extract the name from "{ marsDone.sgqa }" -> "marsDone"
+    if (!tokenString || typeof tokenString !== "string") {
+      return null;
+    }
+    var match = /\{\s*(\w+)/.exec(tokenString);
+    return match ? match[1] : null;
+  }
+  function discoverResultFieldNames() {
+    var allFields = Array.prototype.slice.call(
+      document.querySelectorAll("input[name], textarea[name]"),
+    );
+    var candidates = [];
+    var fieldnamesCandidates = [];
+    var mergedCandidates = [];
+    var currentStepField = null;
+    var currentIndex = -1;
+    var i = 0;
+
+    for (i = 0; i < allFields.length; i += 1) {
+      if (allFields[i].name === "YII_CSRF_TOKEN") {
+        continue;
+      }
+
+      if (/^\d+X\d+X\d+[A-Za-z0-9_]*$/.test(allFields[i].name)) {
+        candidates.push(allFields[i].name);
+      }
+    }
+
+    candidates = uniquePreserveOrder(candidates);
+    fieldnamesCandidates = getNumericFieldNamesFromFieldnamesInput();
+    mergedCandidates = uniquePreserveOrder(
+      candidates.concat(fieldnamesCandidates),
+    );
+    currentStepField = getCurrentStepFieldName();
+
+    if (resultFieldNames) {
+      return true;
+    }
+
+    if (mergedCandidates.length < 7) {
+      return false;
+    }
+
+    if (!currentStepField) {
+      // Fallback 2: when thisstep/container inference is unavailable, use last field.
+      currentStepField = mergedCandidates[mergedCandidates.length - 1];
+    }
+
+    currentIndex = mergedCandidates.indexOf(currentStepField);
+    if (currentIndex < 6) {
+      return false;
+    }
+
+    resultFieldNames = new Object();
+
+    // Expected page order before script question:
+    // done, theta, sem, reliability, itemCount, full, [script question]
+    resultFieldNames.done = mergedCandidates[currentIndex - 6];
+    resultFieldNames.theta = mergedCandidates[currentIndex - 5];
+    resultFieldNames.sem = mergedCandidates[currentIndex - 4];
+    resultFieldNames.reliability = mergedCandidates[currentIndex - 3];
+    resultFieldNames.itemCount = mergedCandidates[currentIndex - 2];
+    resultFieldNames.full = mergedCandidates[currentIndex - 1];
+
+    hideDiscoveredHelperQuestions();
+    return true;
+  }
+
+  function resolveResultFieldName(tokenString) {
+    var tokenName = extractTokenName(tokenString);
+
+    if (!tokenName) {
+      return null;
+    }
+
+    if (!discoverResultFieldNames()) {
+      return null;
+    }
+
+    if (tokenName === "marsDone") {
+      return resultFieldNames.done;
+    }
+    if (tokenName === "marsData_theta") {
+      return resultFieldNames.theta;
+    }
+    if (tokenName === "marsData_sem") {
+      return resultFieldNames.sem;
+    }
+    if (tokenName === "marsData_reliability") {
+      return resultFieldNames.reliability;
+    }
+    if (tokenName === "marsData_itemCount") {
+      return resultFieldNames.itemCount;
+    }
+    if (tokenName === "marsFullResults") {
+      return resultFieldNames.full;
+    }
+
+    return null;
+  }
+
+  function getExactField(name) {
+    var actualName = null;
+    var el = null;
+
+    actualName = resolveResultFieldName(name) || name;
+
+    el = document.querySelector('[name="' + actualName + '"]');
+    if (el && el.name !== "YII_CSRF_TOKEN" && el.id !== "YII_CSRF_TOKEN") {
+      return el;
+    }
+
+    el = document.getElementById(actualName);
+    if (el && el.name !== "YII_CSRF_TOKEN" && el.id !== "YII_CSRF_TOKEN") {
+      return el;
+    }
+
+    el = document.getElementById("answer" + actualName);
+    if (el && el.name !== "YII_CSRF_TOKEN" && el.id !== "YII_CSRF_TOKEN") {
+      return el;
+    }
+
+    return null;
+  }
+
+  function ensureFieldElement(name) {
+    var actualName = resolveResultFieldName(name);
+    var form = null;
+    var created = null;
+    var unresolvedToken = extractTokenName(name);
+
+    // Never create inputs with unresolved EM tokens like "{ marsDone.sgqa }".
+    if (!actualName && unresolvedToken) {
+      return null;
+    }
+
+    if (!actualName) {
+      actualName = name;
+    }
+
+    if (
+      !actualName ||
+      actualName.indexOf(OPEN_BRACE) !== -1 ||
+      actualName.indexOf(CLOSE_BRACE) !== -1
+    ) {
+      return null;
+    }
+
+    var existing = getExactField(name);
+    if (existing) {
+      return existing;
+    }
+
+    form = document.querySelector("form");
+    if (!form) {
+      return null;
+    }
+
+    created = document.createElement("input");
+    created.type = "hidden";
+    created.name = actualName;
+    created.id = "mars-generated-" + actualName.replace(/[^a-zA-Z0-9_-]/g, "_");
+    form.appendChild(created);
+    return created;
+  }
+
+  function triggerEvents(el) {
+    if (window.jQuery) {
+      window.jQuery(el).trigger("input");
+      window.jQuery(el).trigger("change");
+      return;
+    }
+
+    var ev1 = document.createEvent("HTMLEvents");
+    ev1.initEvent("input", true, false);
+    el.dispatchEvent(ev1);
+
+    var ev2 = document.createEvent("HTMLEvents");
+    ev2.initEvent("change", true, false);
+    el.dispatchEvent(ev2);
+  }
+
+  function setFieldExact(name, value) {
+    var el = ensureFieldElement(name);
+
+    if (!el) {
+      var tokenName = extractTokenName(name);
+      var resolvedName = resolveResultFieldName(name);
+      var searchStrategies = [];
+
+      searchStrategies.push(name);
+      if (resolvedName) {
+        searchStrategies.push(resolvedName);
+        searchStrategies.push("answer" + resolvedName);
+      }
+      if (tokenName) {
+        searchStrategies.push(tokenName);
+      }
+
+      console.error(
+        "[MARS] Field not found:",
+        name,
+        "— tried strategies:",
+        searchStrategies,
+      );
+      return false;
+    }
+
+    if (el.name === "YII_CSRF_TOKEN" || el.id === "YII_CSRF_TOKEN") {
+      console.error("[MARS] Refusing to overwrite CSRF field");
+      return false;
+    }
+
+    el.value = value;
+    triggerEvents(el);
+    return true;
+  }
+
+  function getNextButtons() {
+    var buttons = Array.prototype.slice.call(
+      document.querySelectorAll(
+        '#ls-button-submit, button[type="submit"], input[type="submit"], .btn-primary[name="move"]',
+      ),
+    );
+    return buttons;
+  }
+
+  function setNextEnabled(enabled) {
+    var buttons = getNextButtons();
+    var i = 0;
+
+    for (i = 0; i < buttons.length; i += 1) {
+      buttons[i].disabled = !enabled;
+      buttons[i].setAttribute("aria-disabled", enabled ? "false" : "true");
+      if (enabled) {
+        buttons[i].classList.remove("disabled");
+      } else {
+        buttons[i].classList.add("disabled");
+      }
+    }
+  }
+
+  function validatePayload(payload) {
+    return (
+      payload &&
+      typeof payload === "object" &&
+      typeof payload.theta === "number" &&
+      typeof payload.sem === "number" &&
+      typeof payload.reliability === "number" &&
+      typeof payload.itemCount === "number" &&
+      Array.isArray(payload.responses) &&
+      typeof payload.sessionStartMs === "number" &&
+      typeof payload.sessionEndMs === "number"
+    );
+  }
+
+  function handleMessage(event) {
+    var msg = null;
+    var payload = null;
+    var fullJson = "";
+    var ok = true;
+
+    if (event.origin !== APP_ORIGIN) {
+      return;
+    }
+
+    msg = event.data;
+    if (!msg || msg.type !== "MARS_RESULTS") {
+      return;
+    }
+
+    payload = msg.data;
+    if (!validatePayload(payload)) {
+      console.error("[MARS] Invalid MARS payload:", payload);
+      setStatus(getStatusMessage("invalidData"), true);
+      return;
+    }
+
+    fullJson = JSON.stringify(payload);
+
+    ok = setFieldExact(FIELD_DONE, "1") && ok;
+    ok = setFieldExact(FIELD_THETA, String(payload.theta)) && ok;
+    ok = setFieldExact(FIELD_SEM, String(payload.sem)) && ok;
+    ok = setFieldExact(FIELD_RELIABILITY, String(payload.reliability)) && ok;
+    ok = setFieldExact(FIELD_ITEMCOUNT, String(payload.itemCount)) && ok;
+    ok = setFieldExact(FIELD_FULL, fullJson) && ok;
+
+    if (ok) {
+      completed = true;
+      setNextEnabled(true);
+      hideMarsIframe();
+      setStatus(getStatusMessage("testCompleted"), false);
+    } else {
+      setStatus(getStatusMessage("testPartial"), true);
+      console.error("[MARS] ✗ Failed to save some fields");
+    }
+  }
+
+  function isSubmitElement(target) {
+    if (!target) {
+      return false;
+    }
+
+    return !!target.closest(
+      '#ls-button-submit, button[type="submit"], input[type="submit"], .btn-primary[name="move"]',
+    );
+  }
+
+  function blockIfIncomplete(event) {
+    if (completed) {
+      return;
+    }
+
+    if (!isSubmitElement(event.target)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    setStatus(getStatusMessage("mustComplete"), true);
+  }
+
+  function blockFormSubmit(event) {
+    if (completed) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    setStatus(getStatusMessage("mustComplete"), true);
+  }
+
+  window.addEventListener("message", handleMessage, false);
+  document.addEventListener("click", blockIfIncomplete, true);
+
+  var form = document.querySelector("form");
+  if (form) {
+    form.addEventListener("submit", blockFormSubmit, true);
+  }
+
+  setNextEnabled(false);
+  setStatus(getStatusMessage("complete"), false);
+
+  hideEarlyHelperQuestions();
+
+  var fieldDiscoveryAttempts = 0;
+  var fieldDiscoveryTimer = setInterval(function () {
+    fieldDiscoveryAttempts += 1;
+
+    if (resultFieldNames || fieldDiscoveryAttempts > 20) {
+      clearInterval(fieldDiscoveryTimer);
+      return;
+    }
+
+    if (discoverResultFieldNames()) {
+      clearInterval(fieldDiscoveryTimer);
+    }
+  }, 500);
+}
+
+// Try multiple initialization strategies
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", function () {
+    initMARS();
+  });
+} else {
+  initMARS();
+}
+
+// Also try on load event
+window.addEventListener("load", function () {
+  initMARS();
+});
+
+// Fallback: try every 500ms for first 10 seconds
+var initAttempts = 0;
+var initInterval = setInterval(function () {
+  initAttempts++;
+  if (window.__marsHookInstalled || initAttempts > 20) {
+    clearInterval(initInterval);
+  } else {
+    initMARS();
+  }
+}, 500);

@@ -1,0 +1,19 @@
+{
+  "name": "mars-ib-portable-cat",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run server.ts",
+    "start": "bun run server.ts",
+    "build:single": "bun run scripts/build-single-html.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@bdelab/jscat": "github:jakub-jedrusiak/jscat"
+  }
+}
