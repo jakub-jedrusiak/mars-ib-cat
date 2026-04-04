@@ -29,6 +29,10 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Trust jsCAT package scripts
+        run: bun pm trust @bdelab/jscat
+        continue-on-error: true
+
       - name: Build single HTML
         run: bun run build:single
 
