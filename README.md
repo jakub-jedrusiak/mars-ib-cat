@@ -56,6 +56,8 @@ Each response in the `responses` array contains:
 
 ## Usage Options
 
+Generally, you can use this test by directly opening the website in the browser or embeding it as an iFrame in your system of choice (pre-made implementations below). Then you need to setup your system to save the data sent through `window.parent.postMessage()` (see [MDN](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage)).
+
 ### Option 1: Direct Browser Usage
 
 Open the test directly in your browser and download results as JSON:
@@ -88,6 +90,16 @@ Import the MaRS-IB as a question group into LimeSurvey for seamless integration 
 At completion, the test sends assessment data to the parent window via postMessage API, making it easy to embed as an iFrame within surveys or other applications.
 
 When embedding the test, you can pass the same URL parameters on the iframe `src` to control the stopping rules, for example `goalReliability`, `minItems`, and `maxItems`.
+
+### Option 3: Gorilla Integration
+
+The repository includes a ready-to-import Gorilla task package for running the test inside Gorilla Task Builder.
+
+1. Open Gorilla Task Builder.
+2. Import [resources/GorillaTask.zip](resources/GorillaTask.zip) from the `resources` folder.
+3. Follow the Gorilla import flow to add the task to your experiment.
+
+The package is prepared so you can use the adaptive test without manually rebuilding the task structure.
 
 ## Deployment
 
@@ -166,57 +178,6 @@ The UI was based on the [original Gorilla experiment](https://app.gorilla.sc/ope
 - **Feedback**: Immediate ✓/✗ indication
 - **Training Phase**: 3 randomized training items (no CAT impact)
 - **Mobile Responsive**: Optimized for phone/tablet viewing
-
-## Troubleshooting
-
-### Test Not Loading in Browser?
-
-1. **Check Browser Console**: Open DevTools (F12) and check for errors
-2. **Verify File Path**: Ensure the HTML file is accessible and not corrupted
-
-### Results Not Downloading?
-
-1. **Check Browser Settings**: Ensure downloads are allowed in your browser
-2. **Verify File Permissions**: Ensure the directory where downloads are saved is writable
-3. **Check Browser Console**: Look for errors related to file generation or download
-
-### LimeSurvey Integration Issues?
-
-1. **Verify Question Group Format**: Ensure the `.lsg` file is a valid LimeSurvey export
-2. **Check LimeSurvey Version**: Compatibility depends on your LimeSurvey version
-3. **Import Permissions**: Verify you have administrator privileges to import question groups
-4. **Check Import Logs**: Review LimeSurvey's import logs for specific error messages
-
-## Data Analysis
-
-### Understanding Results
-
-Results are provided in JSON format with the following key metrics:
-
-- **Theta**: Final ability estimate (typically -4 to +4)
-  - Higher values indicate higher inductive reasoning ability
-- **SEM**: Standard Error of Measurement
-  - Lower values indicate more precise measurement
-  - SEM < 0.3 = narrow confidence interval, good precision
-- **Reliability**: Reliability coefficient (1 - SEM²)
-  - Reliability > 0.8 = measurement is reliable and suitable for analysis
-- **Item Count**: Number of test items administered (excluding training items)
-
-### Using Downloaded JSON Data
-
-1. Open the downloaded JSON file in a text editor or data analysis software
-2. Extract the metrics (theta, SEM, reliability, itemCount) for individual-level analysis
-3. Review the `responses` array for detailed item-by-item performance data
-4. Import into statistical software (R, Python, SPSS) for group-level analysis
-
-### LimeSurvey Data
-
-When using LimeSurvey integration:
-
-1. Response data is automatically stored in LimeSurvey's survey response table
-2. Export responses via LimeSurvey's standard export function (CSV/Excel)
-3. Results include all theta, SEM, reliability, and itemCount fields
-4. Combine with other survey questions for integrated data analysis
 
 ## Example Response Data
 
