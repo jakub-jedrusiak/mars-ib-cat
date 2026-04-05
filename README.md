@@ -71,7 +71,7 @@ This option requires no external dependencies or server setup.
 
 You can also tune the adaptive stopping rules through URL parameters:
 
-- `goalReliability` sets the target reliability threshold, defaulting to `0.8` (reliability is defined as $\rho = \sqrt{1 - SEM}$)
+- `goalReliability` sets the target reliability threshold, defaulting to `0.8` (reliability is defined as $\rho = 1 - SEM^2$)
 - `minItems` sets the minimum number of test items before stopping is allowed, defaulting to `9`
 - `maxItems` sets the hard maximum number of test items, defaulting to `24`
 
