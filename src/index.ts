@@ -63,10 +63,25 @@ type SessionStore = {
   finishedAt?: number;
 };
 
-const goalReliability = 0.8;
+const urlParams = new URLSearchParams(window.location.search);
+
+const readNumberParam = (name: string, fallback: number) => {
+  const rawValue = urlParams.get(name);
+  if (rawValue === null || rawValue.trim() === "") {
+    return fallback;
+  }
+
+  const parsed = Number(rawValue);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const goalReliability = readNumberParam("goalReliability", 0.8);
+const minItems = Math.max(1, Math.floor(readNumberParam("minItems", 9)));
+const maxItems = Math.max(
+  minItems,
+  Math.floor(readNumberParam("maxItems", 24)),
+);
 const SEthr = Math.sqrt(1 - goalReliability);
-const minItems = 3;
-const maxItems = 5;
 const answerTimeLimitMs = 30_000;
 const minPageTransitionDelayMs = 1_200;
 const imageRetryDelayMs = 300;

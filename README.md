@@ -1,6 +1,6 @@
 # MaRS-IB Computerised Adaptive Test
 
-A standalone, self-contained Computerised Adaptive Test (CAT) for assessing inductive reasoning abilities based on the MaRS-IB item bank. Flexible deployment options allow you to run the test directly in your browser with JSON result export, or seamlessly integrate it into LimeSurvey workflows.
+A standalone, self-contained Computerised Adaptive Test (CAT) for assessing inductive reasoning abilities based on the MaRS-IB item bank (Cherchia, Fuhrmann et al., 2019) and a predefined IRT model (Zorowitz et al., 2024). Flexible deployment options allow you to run the test directly in your browser with JSON result export, or seamlessly integrate it into LimeSurvey, Gorilla, and other workflows.
 
 ## Overview
 
@@ -8,8 +8,9 @@ The MaRS-IB Portable CAT implements an adaptive testing algorithm that:
 
 - Administers 3 training items (randomized, no CAT impact)
 - Adapts test items based on respondent performance
-- Stops when reliability reaches 0.8 or at 24 items maximum (whichever comes first)
-- Requires at least 9 items and both correct and incorrect responses before termination
+- Stops when reliability reaches 0.8 or at 24 items maximum (whichever comes first; adjustablethrough URL parameters)
+- Requires at least 9 items and both correct and incorrect responses before termination (adjustable through URL parameters)
+- Uses 5-item randomesque to increase the item bank coverage
 - Returns detailed assessment data in JSON format for further analysis or integration
 
 ## Result Data Structure
@@ -59,12 +60,22 @@ Each response in the `responses` array contains:
 
 Open the test directly in your browser and download results as JSON:
 
-1. Open `dist/mars.html` in any modern web browser or go to the GitHub Page of this repo
+1. Open [https://jakub-jedrusiak.github.io/mars-ib-cat/](https://jakub-jedrusiak.github.io/mars-ib-cat/) in any modern web browser, or open `dist/mars.html` locally
 2. Take the test in the browser
 3. Upon completion, download your results as a JSON file
 4. Use the JSON data for analysis, archival, or import into other systems
 
 This option requires no external dependencies or server setup.
+
+You can also tune the adaptive stopping rules through URL parameters:
+
+- `goalReliability` sets the target reliability threshold, defaulting to `0.8` (reliability is defined as $\rho = \sqrt{1 - SEM}$)
+- `minItems` sets the minimum number of test items before stopping is allowed, defaulting to `9`
+- `maxItems` sets the hard maximum number of test items, defaulting to `24`
+
+Example:
+
+`https://jakub-jedrusiak.github.io/mars-ib-cat/?goalReliability=0.85&minItems=12&maxItems=20`
 
 ### Option 2: LimeSurvey Integration
 
@@ -75,6 +86,8 @@ Import the MaRS-IB as a question group into LimeSurvey for seamless integration 
 3. Results are automatically stored in LimeSurvey's response database
 
 At completion, the test sends assessment data to the parent window via postMessage API, making it easy to embed as an iFrame within surveys or other applications.
+
+When embedding the test, you can pass the same URL parameters on the iframe `src` to control the stopping rules, for example `goalReliability`, `minItems`, and `maxItems`.
 
 ## Deployment
 
@@ -97,9 +110,9 @@ If you prefer traditional file serving:
    bun run build:single
    ```
 
-2. Host the contents of the `dist/` or `public/` folder on a web server
+2. Host the `dist/mars.html` on a web server
 
-3. For test administration, HTTPS is recommended for secure data transmission
+3. Embed the file as an iFrame and setup your main app to retrieve the data
 
 ## Development
 
@@ -127,23 +140,25 @@ Opens the test at `http://localhost:3000`
 bun run build:single
 ```
 
-Generates `dist/index.single.html` with all assets embedded and HTML minified.
+Generates `dist/mars.html` with all assets embedded and HTML minified.
 
 ## Technical Details
 
 ### Adaptive Testing Algorithm
 
 - **Method**: Starts with EAP (Expected A Posteriori), switches to WLE (Weighted Likelihood Estimation) after first correct AND incorrect response received
-- **Item Selection**: MFI (Maximum Fisher Information)
+- **Item Selection**: MFI (Maximum Fisher Information) with 5-item randomesque
 - **Stopping Rules**:
   - Reliability ≥ 0.8 AND item count ≥ 9 AND both correct/incorrect responses received
   - OR item count reaches 24 (hard stop, independent of response pattern)
-  - Test CANNOT end before receiving at least one correct and one incorrect response
+  - Test won't end before receiving at least one correct and one incorrect response, even if the reliability threshold has been reached (but maxItems takes precedence)
 - **Theta Range**: -4 to +4
 - **Prior Distribution**: Normal(0, 1)
-- **IRT Model**: 4-Parameter Logistic (4PL) with discrimination (a), difficulty (b), guessing (c), and slipping (d) parameters
+- **IRT Model**: 4-Parameter Logistic (4PL) with discrimination (a), difficulty (b), guessing (c), and slipping (d) parameters fitted by Sam Zorowitz et al. (2024)
 
 ### UI Features
+
+The UI was based on the [original Gorilla experiment](https://app.gorilla.sc/openmaterials/36164) from the paper (Cherchia, Fuhrmann et al., 2019).
 
 - **Item Presentation**: 3×3 matrix with 4 answer options below
 - **Fixation Cross**: 1200 ms display during stimulus transitions
@@ -253,7 +268,7 @@ When using LimeSurvey integration:
 
 ## License and acknowledgements
 
-This project uses MIT license.
+This adaptive version of MaRs-IB was created by Jakub Jędrusiak from the University of Wrocław (Poland). It is shared under MIT license.
 
 The MaRS-IB is an amazing set of Raven-like matrices created by Gabriele Cherchia, Delia Fuhrmann et al. (unspecified license,restricted for academic and non-commercial purposes only):
 
