@@ -1,10 +1,10 @@
-# MaRS-IB Computerised Adaptive Test
+# MaRs-IB Computerised Adaptive Test
 
-A standalone, self-contained Computerised Adaptive Test (CAT) for assessing inductive reasoning abilities based on the MaRS-IB item bank (Cherchia, Fuhrmann et al., 2019) and a predefined IRT model (Zorowitz et al., 2024). Flexible deployment options allow you to run the test directly in your browser with JSON result export, or seamlessly integrate it into LimeSurvey, Gorilla, and other workflows.
+A standalone, self-contained Computerised Adaptive Test (CAT) for assessing inductive reasoning abilities based on the MaRs-IB item bank (Cherchia, Fuhrmann et al., 2019) and a predefined IRT model (Zorowitz et al., 2024). Flexible deployment options allow you to run the test directly in your browser with JSON result export, or seamlessly integrate it into LimeSurvey, Gorilla, and other workflows.
 
 ## Overview
 
-The MaRS-IB Portable CAT implements an adaptive testing algorithm that:
+The MaRs-IB Portable CAT implements an adaptive testing algorithm that:
 
 - Administers 3 training items (randomized, no CAT impact)
 - Adapts test items based on respondent performance
@@ -56,7 +56,7 @@ Each response in the `responses` array contains:
 
 ## Usage Options
 
-Generally, you can use this test by directly opening the website in the browser or embeding it as an iFrame in your system of choice (pre-made implementations below). Then you need to setup your system to save the data sent through `window.parent.postMessage()` (see [MDN](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage)).
+Generally, you can use this test by directly opening the website in the browser or embeding it as an iFrame in your system of choice (pre-made implementations below). Then you need to setup your system to save the data sent through .
 
 ### Option 1: Direct Browser Usage
 
@@ -81,7 +81,7 @@ Example:
 
 ### Option 2: LimeSurvey Integration
 
-Import the MaRS-IB as a question group into LimeSurvey for seamless integration into your survey workflows:
+Import the MaRs-IB as a question group into LimeSurvey for seamless integration into your survey workflows:
 
 1. In LimeSurvey, create a new survey, add a new group and before you fill out any details, click the Import button in the left corner
 2. Import the provided `LimeSurveyQuestionGroup.lsg` file
@@ -101,9 +101,66 @@ The repository includes a ready-to-import Gorilla task package for running the t
 
 The package is prepared so you can use the adaptive test without manually rebuilding the task structure.
 
-## Deployment
+### Option 4: Custom integration
 
-### Option 1: Self-Contained Single File
+You can create your own integration using HTML and simple JavaScript. The overall method is to embed the released webpage in an iFrame and setup an event listener that will retrieve the data after the test. When the test ends, the iFrame will send a message to the parent window through `window.parent.postMessage()` (see [MDN](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage)). Here's an example integration:
+
+#### HTML
+
+```html
+<iframe
+      allow="fullscreen"
+      height="780"
+      id="marsFrame"
+      sandbox="allow-scripts allow-same-origin"
+      src="https://jakub-jedrusiak.github.io/mars-ib-cat/"
+      style="border: 0"
+      width="100%"
+    ></iframe>
+```
+
+#### JavaScript
+
+```js
+const iframe = document.getElementById("marsFrame");
+const ALLOWED_ORIGIN = "https://jakub-jedrusiak.github.io";
+
+window.addEventListener("message", (event) => {
+  // Ensure data origin
+  if (
+    event.origin !== ALLOWED_ORIGIN ||
+    event.source !== iframe.contentWindow
+  ) {
+    return;
+  }
+
+  const message = event.data;
+
+  // Only react to actual MaRs results
+  if (message.type !== "MARS_RESULTS") {
+    return;
+  }
+
+  // Hide the iframe, so the user does not see their estimates
+  iframe.style.display = "none"
+  
+  // Optionally: display a message
+  const endingMessage = document.createElement("p")
+  endingMessage.textContent = "Thank you, you can continue"
+  iframe.insertAdjacentElement("endingMessage", endingMessage);
+
+  // Get the data
+  const marsData = message.data;
+  const { theta, sem, itemCount } = marsData; // Final stats
+  const allResponses = JSON.stringify(marsData.responses); // All responses as text
+
+  // Save the data in your own system...
+});
+```
+
+This is a very simple example of integration. In your own system, you might want to verify the data, unblock the Next button or even programmatically move the user to the next page.
+
+## Self-Deployment
 
 The project includes `dist/mars.html` — a fully self-contained HTML file with all assets (images, CSS, JavaScript) embedded as data URLs. This file requires no additional resources and can be:
 
@@ -111,9 +168,7 @@ The project includes `dist/mars.html` — a fully self-contained HTML file with 
 - Deployed to a CDN
 - Served directly from a single URL
 
-### Option 2: Traditional Deployment
-
-If you prefer traditional file serving:
+To build the file by yourself:
 
 1. Build the project:
 
@@ -125,34 +180,6 @@ If you prefer traditional file serving:
 2. Host the `dist/mars.html` on a web server
 
 3. Embed the file as an iFrame and setup your main app to retrieve the data
-
-## Development
-
-### Prerequisites
-
-- Node.js/Bun runtime
-
-### Installation
-
-```bash
-bun install
-```
-
-### Development Server
-
-```bash
-bun run dev
-```
-
-Opens the test at `http://localhost:3000`
-
-### Build Single-File Bundle
-
-```bash
-bun run build:single
-```
-
-Generates `dist/mars.html` with all assets embedded and HTML minified.
 
 ## Technical Details
 
@@ -231,7 +258,7 @@ The UI was based on the [original Gorilla experiment](https://app.gorilla.sc/ope
 
 This adaptive version of MaRs-IB was created by Jakub Jędrusiak from the University of Wrocław (Poland). It is shared under MIT license.
 
-The MaRS-IB is an amazing set of Raven-like matrices created by Gabriele Cherchia, Delia Fuhrmann et al. (unspecified license,restricted for academic and non-commercial purposes only):
+The MaRs-IB is an amazing set of Raven-like matrices created by Gabriele Cherchia, Delia Fuhrmann et al. (unspecified license,restricted for academic and non-commercial purposes only):
 
 Chierchia, G., Fuhrmann, D., Knoll, L. J., Pi-Sunyer, B. P., Sakhardande, A. L., & Blakemore, S.-J. (2019). The matrix reasoning item bank (Mars-ib): Novel, open-access abstract reasoning items for adolescents and adults. *Royal Society Open Science*, *6*(10), 190232. <https://doi.org/10.1098/rsos.190232>
 
