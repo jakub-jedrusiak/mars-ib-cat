@@ -93,6 +93,9 @@ const resolveAssetUrl = (path: string) =>
 const app = document.querySelector<HTMLDivElement>("#app");
 const startSection = document.querySelector<HTMLElement>("#start-section");
 const startButton = document.querySelector<HTMLButtonElement>("#start-btn");
+const startButtonLabel = document.querySelector<HTMLSpanElement>(
+  "#start-btn .btn-label",
+);
 const betweenSection = document.querySelector<HTMLElement>("#between-section");
 const startTestButton =
   document.querySelector<HTMLButtonElement>("#start-test-btn");
@@ -120,6 +123,7 @@ if (
   !app ||
   !startSection ||
   !startButton ||
+  !startButtonLabel ||
   !betweenSection ||
   !startTestButton ||
   !testSection ||
@@ -169,6 +173,8 @@ let countdownId: ReturnType<typeof setInterval> | null = null;
 let matrixResizeObserver: ResizeObserver | null = null;
 let itemCount = 0;
 let latestResult: QualtricResult | null = null;
+let assetsReady = false;
+let preloadStarted = false;
 
 type FullscreenCapableElement = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
@@ -309,6 +315,13 @@ const loadImageWithRetry = async (url: string) => {
   }
 };
 
+const setStartButtonLoading = (loading: boolean) => {
+  startButton.classList.toggle("loading", loading);
+  startButton.setAttribute("aria-busy", loading ? "true" : "false");
+  startButton.disabled = loading;
+  startButtonLabel.textContent = loading ? "Loading" : "Start";
+};
+
 const clearTimers = () => {
   if (timeoutId) {
     clearTimeout(timeoutId);
@@ -352,6 +365,43 @@ const getTrainingImageUrls = (trainingId: string) => {
   }));
 
   return { matrixUrl, answers };
+};
+
+const buildAllAssetUrls = () => {
+  const urls = new Set<string>();
+
+  (marsItems as MarsStimulus[]).forEach((stimulus) => {
+    const { matrixUrl, answers } = getImageUrls(stimulus.item);
+    urls.add(matrixUrl);
+    answers.forEach((answer) => {
+      urls.add(answer.url);
+    });
+  });
+
+  trainingItemIds.forEach((trainingId) => {
+    const { matrixUrl, answers } = getTrainingImageUrls(trainingId);
+    urls.add(matrixUrl);
+    answers.forEach((answer) => {
+      urls.add(answer.url);
+    });
+  });
+
+  return [...urls];
+};
+
+const preloadAllAssets = async () => {
+  if (preloadStarted) {
+    return;
+  }
+
+  preloadStarted = true;
+  setStartButtonLoading(true);
+
+  const urls = buildAllAssetUrls();
+  await Promise.all(urls.map((url) => loadImageWithRetry(url)));
+
+  assetsReady = true;
+  setStartButtonLoading(false);
 };
 
 const prepareTestItemAssets = async (
@@ -776,6 +826,10 @@ const init = async () => {
 };
 
 startButton.addEventListener("click", () => {
+  if (!assetsReady) {
+    return;
+  }
+
   startButton.disabled = true;
   latestResult = null;
   downloadJsonButton.disabled = true;
@@ -813,3 +867,5 @@ startTestButton.addEventListener("click", () => {
     await renderItem(firstTestPreparedItem, itemCount);
   })();
 });
+
+void preloadAllAssets();

@@ -179,6 +179,11 @@
       }
 
       .start-btn {
+        --spinner-size: 1.2rem;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         border: 0;
         border-radius: 10px;
         background: #111827;
@@ -192,6 +197,35 @@
       .start-btn:disabled {
         opacity: 0.7;
         cursor: default;
+      }
+
+      .start-btn.loading {
+        min-width: 6.5rem;
+      }
+
+      .start-btn.loading .btn-label {
+        opacity: 0;
+      }
+
+      .start-btn.loading::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: var(--spinner-size);
+        height: var(--spinner-size);
+        margin-top: calc(var(--spinner-size) * -0.5);
+        margin-left: calc(var(--spinner-size) * -0.5);
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.35);
+        border-top-color: #fff;
+        animation: spin 0.7s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
       }
 
       .final-card {
@@ -267,7 +301,15 @@
           CAT by Jakub Jędrusiak (2026), MaRs item bank by Cherchia, Fuhrmann et
           al. (2019), IRT analysis by Zorowitz et al. (2024)
         </p>
-        <button id="start-btn" class="start-btn" type="button">Start</button>
+        <button
+          id="start-btn"
+          class="start-btn loading"
+          type="button"
+          disabled
+          aria-busy="true"
+        >
+          <span class="btn-label">Start</span>
+        </button>
       </section>
 
       <section id="test-section" class="hidden">
