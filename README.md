@@ -174,6 +174,8 @@ The project includes `dist/mars.html` — a fully self-contained HTML file with 
 
 To build the file by yourself:
 
+0. Install [bun](https://bun.sh/) if you haven't already (or use a similar tool)
+
 1. Build the project:
 
    ```bash
@@ -183,7 +185,7 @@ To build the file by yourself:
 
 2. Host the `dist/mars.html` on a web server
 
-3. Embed the file as an iFrame and setup your main app to retrieve the data
+3. Embed the file as an iFrame and setup your main app to retrieve the data (see an example [above](#option-4-custom-integration))
 
 ## Technical Details
 
