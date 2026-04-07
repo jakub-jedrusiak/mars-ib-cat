@@ -69,15 +69,7 @@ Open the test directly in your browser and download results as JSON:
 
 This option requires no external dependencies or server setup.
 
-You can also tune the adaptive stopping rules through URL parameters:
 
-- `goalReliability` sets the target reliability threshold, defaulting to `0.8` (reliability is defined as $\rho = 1 - SEM^2$)
-- `minItems` sets the minimum number of test items before stopping is allowed, defaulting to `9`
-- `maxItems` sets the hard maximum number of test items, defaulting to `24`
-
-Example:
-
-`https://jakub-jedrusiak.github.io/mars-ib-cat/?goalReliability=0.85&minItems=12&maxItems=20`
 
 ### Option 2: LimeSurvey Integration
 
@@ -159,6 +151,18 @@ window.addEventListener("message", (event) => {
 ```
 
 This is a very simple example of integration. In your own system, you might want to verify the data, unblock the Next button or even programmatically move the user to the next page.
+
+## URL parameters
+
+You can tune the adaptive stopping rules through URL parameters:
+
+- `goalReliability` sets the target reliability threshold, defaulting to `0.8` (reliability is defined as $\rho = 1 - SEM^2$)
+- `minItems` sets the minimum number of test items before stopping is allowed, defaulting to `9`
+- `maxItems` sets the hard maximum number of test items, defaulting to `24`
+
+Example:
+
+`https://jakub-jedrusiak.github.io/mars-ib-cat/?goalReliability=0.85&minItems=12&maxItems=20`
 
 ## Self-Deployment
 
