@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-type QualtricResult = {
+type MarsResult = {
   theta: number;
   sem: number;
   reliability: number;
@@ -75,6 +75,17 @@ const readNumberParam = (name: string, fallback: number) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const readBoolParam = (name: string, fallback: boolean): boolean => {
+  const rawValue = urlParams.get(name);
+  if (rawValue === null) {
+    return fallback;
+  }
+  return rawValue === "true" || rawValue === "1" || rawValue === "";
+};
+
+const isInIframe =
+  window.self !== window.top || urlParams.get("standalone") === "true";
+const skipTraining = readBoolParam("skipTraining", false);
 const goalReliability = readNumberParam("goalReliability", 0.8);
 const minItems = Math.max(1, Math.floor(readNumberParam("minItems", 9)));
 const maxItems = Math.max(
@@ -172,7 +183,7 @@ let timeoutId: ReturnType<typeof setTimeout> | null = null;
 let countdownId: ReturnType<typeof setInterval> | null = null;
 let matrixResizeObserver: ResizeObserver | null = null;
 let itemCount = 0;
-let latestResult: QualtricResult | null = null;
+let latestResult: MarsResult | null = null;
 let assetsReady = false;
 let preloadStarted = false;
 
@@ -546,7 +557,7 @@ const shouldStopNow = (answeredCount: number) => {
 
 const formatMetric = (value: number) => value.toFixed(3);
 
-const downloadResultJson = (result: QualtricResult) => {
+const downloadResultJson = (result: MarsResult) => {
   const blob = new Blob([JSON.stringify(result, null, 2)], {
     type: "application/json",
   });
@@ -578,7 +589,7 @@ const finishTest = () => {
   finalSection.classList.remove("hidden");
 
   // Send results to Qualtrics via postMessage
-  const result: QualtricResult = {
+  const result: MarsResult = {
     theta: marsCat.theta,
     sem: sem,
     reliability: reliability,
@@ -597,7 +608,7 @@ const finishTest = () => {
   downloadJsonButton.disabled = false;
 
   try {
-    window.parent.postMessage({ type: "MARS_RESULTS", data: result }, "*");
+    window.parent.postMessage({ type: "psyframe_result", data: result }, "*");
   } catch (e) {
     console.log("postMessage not available, results not sent to parent");
   }
@@ -807,6 +818,27 @@ const init = async () => {
   testSection.classList.remove("hidden");
   finalSection.classList.add("hidden");
 
+  // Skip training if ?skipTraining=true
+  if (skipTraining) {
+    phase = "test";
+    testSection.classList.remove("hidden");
+    betweenSection.classList.add("hidden");
+
+    showTransitionMask();
+    await nextPaint();
+
+    const firstTestStimulus = pickNextStimulus();
+    if (!firstTestStimulus) {
+      finishTest();
+      return;
+    }
+    const firstTestPreparedItem =
+      await prepareTestItemAssets(firstTestStimulus);
+    itemCount = 1;
+    await renderItem(firstTestPreparedItem, itemCount);
+    return;
+  }
+
   showTransitionMask();
   await nextPaint();
 
@@ -845,6 +877,11 @@ downloadJsonButton.addEventListener("click", () => {
 
   downloadResultJson(latestResult);
 });
+
+// Show download button only in standalone mode (not in iframe)
+if (isInIframe) {
+  downloadJsonButton.style.display = "none";
+}
 
 startTestButton.addEventListener("click", () => {
   startTestButton.disabled = true;
