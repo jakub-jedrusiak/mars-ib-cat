@@ -97,6 +97,9 @@ const answerTimeLimitMs = 30_000;
 const minPageTransitionDelayMs = 1_200;
 const imageRetryDelayMs = 300;
 const fixationCrossDurationMs = 1_200;
+const iframeResizeMessageType = "psyframe_resize";
+const iframeResizeDebounceMs = 120;
+const iframeResizeMinDeltaPx = 4;
 const trainingItemIds = ["1", "2", "3"];
 const resolveAssetUrl = (path: string) =>
   window.__MARS_ASSETS__?.[path] ?? path;
@@ -182,10 +185,13 @@ let itemStartedAt = 0;
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
 let countdownId: ReturnType<typeof setInterval> | null = null;
 let matrixResizeObserver: ResizeObserver | null = null;
+let appResizeObserver: ResizeObserver | null = null;
 let itemCount = 0;
 let latestResult: MarsResult | null = null;
 let assetsReady = false;
 let preloadStarted = false;
+let pendingResizeReportTimeout: ReturnType<typeof setTimeout> | null = null;
+let lastReportedIframeHeight = 0;
 
 type FullscreenCapableElement = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
@@ -527,6 +533,77 @@ const updateMainWidthVar = () => {
   }
 };
 
+const reportIframeHeight = (force = false) => {
+  if (!isInIframe) {
+    return;
+  }
+
+  const nextHeight = Math.ceil(app.getBoundingClientRect().height);
+  if (!Number.isFinite(nextHeight) || nextHeight <= 0) {
+    return;
+  }
+
+  if (
+    !force &&
+    Math.abs(nextHeight - lastReportedIframeHeight) < iframeResizeMinDeltaPx
+  ) {
+    return;
+  }
+
+  lastReportedIframeHeight = nextHeight;
+
+  try {
+    window.parent.postMessage(
+      {
+        type: iframeResizeMessageType,
+        height: nextHeight,
+      },
+      "*",
+    );
+  } catch {
+    // Ignore postMessage failures in restrictive embeds.
+  }
+};
+
+const scheduleIframeHeightReport = (force = false) => {
+  if (!isInIframe) {
+    return;
+  }
+
+  if (force) {
+    if (pendingResizeReportTimeout) {
+      clearTimeout(pendingResizeReportTimeout);
+      pendingResizeReportTimeout = null;
+    }
+    reportIframeHeight(true);
+    return;
+  }
+
+  if (pendingResizeReportTimeout) {
+    clearTimeout(pendingResizeReportTimeout);
+  }
+
+  pendingResizeReportTimeout = setTimeout(() => {
+    pendingResizeReportTimeout = null;
+    reportIframeHeight(false);
+  }, iframeResizeDebounceMs);
+};
+
+const ensureAppResizeObserver = () => {
+  if (
+    !isInIframe ||
+    appResizeObserver ||
+    typeof ResizeObserver === "undefined"
+  ) {
+    return;
+  }
+
+  appResizeObserver = new ResizeObserver(() => {
+    scheduleIframeHeightReport(false);
+  });
+  appResizeObserver.observe(app);
+};
+
 const ensureMatrixObserver = () => {
   if (matrixResizeObserver) {
     return;
@@ -606,6 +683,7 @@ const finishTest = () => {
   finalReliabilityValue.textContent = formatMetric(result.reliability);
   finalItemCountValue.textContent = String(result.itemCount);
   downloadJsonButton.disabled = false;
+  scheduleIframeHeightReport(true);
 
   try {
     window.parent.postMessage({ type: "psyframe_result", data: result }, "*");
@@ -662,6 +740,7 @@ const renderItem = async (preparedItem: PreparedItem, itemNumber: number) => {
   await nextPaint();
 
   hideFixationCross();
+  scheduleIframeHeightReport(true);
 
   awaitingAnswer = true;
   setAnswersDisabled(false);
@@ -751,6 +830,7 @@ const submitAnswer = async (
     testSection.classList.add("hidden");
     betweenSection.classList.remove("hidden");
     startTestButton.disabled = false;
+    scheduleIframeHeightReport(true);
     return;
   }
 
@@ -811,18 +891,24 @@ const submitAnswer = async (
 
 const init = async () => {
   hideTimer();
-  window.addEventListener("resize", updateMainWidthVar);
+  window.addEventListener("resize", () => {
+    updateMainWidthVar();
+    scheduleIframeHeightReport(false);
+  });
+  ensureAppResizeObserver();
 
   startSection.classList.add("hidden");
   betweenSection.classList.add("hidden");
   testSection.classList.remove("hidden");
   finalSection.classList.add("hidden");
+  scheduleIframeHeightReport(true);
 
   // Skip training if ?skipTraining=true
   if (skipTraining) {
     phase = "test";
     testSection.classList.remove("hidden");
     betweenSection.classList.add("hidden");
+    scheduleIframeHeightReport(true);
 
     showTransitionMask();
     await nextPaint();
@@ -888,6 +974,7 @@ startTestButton.addEventListener("click", () => {
   void requestStartFullscreen();
   betweenSection.classList.add("hidden");
   testSection.classList.remove("hidden");
+  scheduleIframeHeightReport(true);
 
   void (async () => {
     showTransitionMask();
@@ -906,3 +993,20 @@ startTestButton.addEventListener("click", () => {
 });
 
 void preloadAllAssets();
+
+window.addEventListener("beforeunload", () => {
+  if (pendingResizeReportTimeout) {
+    clearTimeout(pendingResizeReportTimeout);
+    pendingResizeReportTimeout = null;
+  }
+
+  if (appResizeObserver) {
+    appResizeObserver.disconnect();
+    appResizeObserver = null;
+  }
+
+  if (matrixResizeObserver) {
+    matrixResizeObserver.disconnect();
+    matrixResizeObserver = null;
+  }
+});

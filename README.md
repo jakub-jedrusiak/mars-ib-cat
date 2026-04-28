@@ -1,6 +1,13 @@
 # MaRs-IB Computerised Adaptive Test
 
-A standalone, self-contained Computerised Adaptive Test (CAT) for assessing inductive reasoning abilities based on the MaRs-IB item bank (Cherchia, Fuhrmann et al., 2019) and a predefined IRT model (Zorowitz et al., 2024). Flexible deployment options allow you to run the test directly in your browser with JSON result export, or seamlessly integrate it into LimeSurvey, Gorilla, and other workflows.
+![psyFrames Badge](https://img.shields.io/badge/psyFrames-compatible-2ea44f?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iV2Fyc3R3YV8xIiBkYXRhLW5hbWU9IldhcnN0d2EgMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNTQ5LjA4IDgwMCI%2BCiAgPGRlZnM%2BCiAgICA8c3R5bGU%2BCiAgICAgIC5jbHMtMSB7CiAgICAgICAgZmlsbDogI2ZmZjsKICAgICAgfQogICAgPC9zdHlsZT4KICA8L2RlZnM%2BCiAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNTE4LjU0LDQzNS4yNWMtMTcuMjgtMzMuNDItNDEuNjQtNjMuMzEtNzAuODktODcuMTQsMjguNDUtMzcuNTgsNDMuOTgtODMuNiw0My45OC0xMzEuMDFDNDkxLjY0LDk3LjM5LDM5NC4yNSwwLDI3NC41NCwwUzU3LjQ0LDk3LjM5LDU3LjQ0LDIxNy4xYzAsNDcuNDEsMTUuNTMsOTMuNDMsNDMuOTgsMTMxLjAxLTI5LjI1LDIzLjgyLTUzLjYxLDUzLjcyLTcwLjg5LDg3LjE0QzEwLjU2LDQ3My44NywwLDUxNy40MSwwLDU2MS4xN2MwLDQ4LjgsMTIuOTgsOTYuNzMsMzcuNTIsMTM4LjYxLDIzLjgxLDQwLjYzLDU3Ljg5LDc0LjY4LDk4LjU0LDk4LjQ3LDEuOTYsMS4xNSw0LjE4LDEuNzUsNi40NSwxLjc1aDI2NC4wNmMyLjI3LDAsNC40OS0uNiw2LjQ1LTEuNzUsNDAuNjUtMjMuNzksNzQuNzItNTcuODQsOTguNTQtOTguNDcsMjQuNTQtNDEuODgsMzcuNTItODkuODEsMzcuNTItMTM4LjYxLDAtNDMuNzYtMTAuNTYtODcuMzEtMzAuNTMtMTI1LjkyaDBaTTQwMy4wNiw3NzQuNDdIMTQ2LjAxYy03NC40MS00NC45NC0xMjAuNDgtMTI2LjM1LTEyMC40OC0yMTMuMywwLTc4Ljg0LDM3Ljk3LTE1My44NSwxMDEuNTYtMjAwLjY2LDIuODYtMi4xMSw0LjcyLTUuMzEsNS4xMi04Ljg0LjQtMy41My0uNjktNy4wNy0zLTkuNzYtMjkuODItMzQuNjktNDYuMjQtNzkuMDEtNDYuMjQtMTI0LjgxLDAtMTA1LjYzLDg1Ljk0LTE5MS41NywxOTEuNTctMTkxLjU3czE5MS41Nyw4NS45NCwxOTEuNTcsMTkxLjU3YzAsNDUuNzktMTYuNDIsOTAuMTItNDYuMjQsMTI0LjgxLTIuMzIsMi42OS0zLjQsNi4yMy0zLDkuNzYuNCwzLjUzLDIuMjYsNi43Myw1LjEyLDguODQsNjMuNiw0Ni44MSwxMDEuNTYsMTIxLjgyLDEwMS41NiwyMDAuNjYsMCw4Ni45NS00Ni4wNywxNjguMzUtMTIwLjQ4LDIxMy4zWiIvPgogIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTE0Ny4wNCwxOTEuMDNjMCw3MC4zLDU3LjIsMTI3LjUsMTI3LjUsMTI3LjVzMTI3LjUtNTcuMiwxMjcuNS0xMjcuNWMwLTUuMjctLjM2LTEwLjQ2LS45OC0xNS41Ni0uMDQtLjYzLS4xMS0xLjI1LS4yNC0xLjg2LTguNTMtNjIuMDktNjEuODktMTEwLjA3LTEyNi4yOC0xMTAuMDdzLTExNy43NSw0Ny45OS0xMjYuMjgsMTEwLjA3Yy0uMTMuNjEtLjIsMS4yNC0uMjQsMS44Ni0uNjIsNS4xLS45OCwxMC4yOS0uOTgsMTUuNTZoMFpNMjc0LjU0LDI5Mi45OWMtNTYuMjIsMC0xMDEuOTctNDUuNzQtMTAxLjk3LTEwMS45NywwLTIuMDUuMDgtNC4wNy4yLTYuMDksNDAuODctMTguMzUsNzYuMjctNDcuODcsMTAxLjc3LTg0LjczLDI1LjUsMzYuODYsNjAuODksNjYuMzgsMTAxLjc3LDg0LjczLjEyLDIuMDIuMiw0LjA1LjIsNi4wOSwwLDU2LjIyLTQ1Ljc0LDEwMS45Ni0xMDEuOTcsMTAxLjk2Wk0zNjguOTksMTUyLjY4Yy0yNi43My0xNS4wNy01MC4yLTM1LjY4LTY4LjYyLTYwLjI5LDMxLjIxLDguMTgsNTYuNjEsMzAuODIsNjguNjIsNjAuMjlaTTI0OC43LDkyLjM4Yy0xOC40MiwyNC42MS00MS44OCw0NS4yMi02OC42Miw2MC4yOSwxMi4wMS0yOS40NywzNy40MS01Mi4xMSw2OC42Mi02MC4yOVoiLz4KICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik00NzMuMzcsNDc4LjMyYy03Ni45NS0xLjQzLTE0OC41NS00My45LTE4Ni44Ny0xMTAuODItMi4yNy0zLjk3LTYuNS02LjQyLTExLjA4LTYuNDJzLTguODEsMi40NS0xMS4wOCw2LjQyYy0zOC42NSw2Ny41MS0xMTAuOSwxMDkuOTgtMTg4LjU1LDExMC44NS03LjA1LjA4LTEyLjcsNS44Ni0xMi42MiwxMi45MS4wOCw3LDUuNzgsMTIuNjIsMTIuNzYsMTIuNjJoLjE0YzQzLjUxLS40OCw4Ni4xNi0xMi41MiwxMjMuMzEtMzQuOCwzMC4xNC0xOC4wNyw1Ni4xMi00Mi40OSw3Ni4wNC03MS4zMiwxOS43NSwyOC41OCw0NS40Nyw1Mi44NCw3NS4yOCw3MC44NiwzNi43OSwyMi4yNCw3OS4wNCwzNC40MiwxMjIuMTksMzUuMjMsNy4wNC4xNywxMi44Ny01LjQ4LDEzLTEyLjUzLjEzLTcuMDUtNS40Ny0xMi44Ny0xMi41Mi0xM1oiLz4KICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0zMTYuODMsMTgwLjQ4aC0xMC43N2MtNy4wNSwwLTEyLjc3LDUuNzItMTIuNzcsMTIuNzdzNS43MiwxMi43NywxMi43NywxMi43N2gxMC43N2M3LjA1LDAsMTIuNzctNS43MiwxMi43Ny0xMi43N3MtNS43Mi0xMi43Ny0xMi43Ny0xMi43N1oiLz4KICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0yNDQuNzgsMTgwLjQ4aC0xMi41NGMtNy4wNSwwLTEyLjc3LDUuNzItMTIuNzcsMTIuNzdzNS43MiwxMi43NywxMi43NywxMi43N2gxMi41NGM3LjA1LDAsMTIuNzctNS43MiwxMi43Ny0xMi43N3MtNS43Mi0xMi43Ny0xMi43Ny0xMi43N1oiLz4KICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0yMjkuNjQsNjk4Ljg4Yy0yLjczLDAtNC4wOS0xLjEyLTQuMDktMy4zNiwwLS43LjM5LTEuMzMsMS4xNy0xLjg5Ljc4LS41NiwxLjc1LS44NCwyLjkyLS44NCwxMC4zMywwLDE3LjQ5LS45OCwyMS40OS0yLjk0LDMuOTktMS45Niw1Ljk5LTUuMzIsNS45OS0xMC4wOHYtMTcuODVjMC0xLjY4LTEuMjctMi41OS0zLjgtMi43My0xNC44MS0uOTgtMjYuNzUtMy41LTM1LjgxLTcuNTYtOS4wNi00LjA2LTE1Ljk4LTguOTItMjAuNzYtMTQuNTktNC43OC01LjY3LTguMjktMTEuNTUtMTAuNTItMTcuNjQtMi4yNC02LjA5LTMuOTUtMTEuNjUtNS4xMi0xNi42OS0xLjE3LTQuNzYtMi4zOS04LjcxLTMuNjUtMTEuODYtMS4yNy0zLjE1LTMuNDYtNC43Mi02LjU4LTQuNzItNi4wNCwwLTEwLjIzLDEuNjgtMTIuNTcsNS4wNC0uNzgsMS4xMi0xLjc1LDEuNjUtMi45MiwxLjU4LTEuMTctLjA3LTIuMjQtLjE3LTMuMjItLjMyLTIuNTMtLjg0LTMuNDEtMS45Ni0yLjYzLTMuMzYuNzgtMy43OCwyLjQzLTcuNTYsNC45Ny0xMS4zNCwyLjUzLTMuNzgsNi4zOC02LjkzLDExLjU1LTkuNDUsNS4xNi0yLjUyLDExLjg0LTMuNzgsMjAuMDItMy43OHMxNC4zMiwxLjQ3LDE4LjQyLDQuNDFjNC4wOSwyLjk0LDYuOTIsNi44Miw4LjQ4LDExLjY1LDEuNTYsNC44MywyLjUzLDEwLjIyLDIuOTIsMTYuMTcuMzksNS45NS44OCwxMS45NCwxLjQ2LDE3Ljk1LjU4LDYuMDIsMS45LDExLjY1LDMuOTUsMTYuOSwyLjA1LDUuMjUsNS41LDkuNjYsMTAuMzgsMTMuMjMsNC44NywzLjU3LDExLjk5LDUuNzcsMjEuMzQsNi42MS45Ny40MiwxLjkuNDIsMi43OCwwczEuMzItMS4xMiwxLjMyLTIuMXYtODMuOTljMC00LjktMS45LTguMjktNS43LTEwLjE4LTMuOC0xLjg5LTEwLjY3LTIuODQtMjAuNjEtMi44NC0yLjUzLDAtMy44LS45MS0zLjgtMi43MywwLTIuMSwxLjI3LTMuMTUsMy44LTMuMTUsMy4xMiwwLDcuMjYuMDcsMTIuNDIuMjEsNS4xNi4xNCwxMC42Mi4yNSwxNi4zNy4zMSw1Ljc1LjA3LDExLjA2LjExLDE1LjkzLjExLDcuNCwwLDE1LjE1LS4xMSwyMy4yNC0uMzIsOC4wOS0uMjEsMTQuNTctLjMxLDE5LjQ0LS4zMSwyLjczLDAsNC4wOSwxLjA1LDQuMDksMy4xNSwwLDEuODItMS4zNywyLjczLTQuMDksMi43My05LjU1LDAtMTYuMzIuOTEtMjAuMzIsMi43My00LDEuODItNS45OSw1LjI1LTUuOTksMTAuMjl2ODMuOTljMCwuOTguMzksMS42MSwxLjE3LDEuODkuNzguMjgsMi4wNS4zNSwzLjguMjEsOC45Ni0uNTYsMTUuNzktMi41NSwyMC40Ni01Ljk4LDQuNjgtMy40Myw4LjA0LTcuNzMsMTAuMDktMTIuOTEsMi4wNS01LjE4LDMuMzYtMTAuODEsMy45NS0xNi45LjU5LTYuMDksMS4wNy0xMi4xNCwxLjQ2LTE4LjE2LjM5LTYuMDIsMS40MS0xMS41MSwzLjA3LTE2LjQ4LDEuNjUtNC45Nyw0LjU4LTguOTYsOC43Ny0xMS45Nyw0LjE5LTMuMDEsMTAuMjgtNC41MSwxOC4yNy00LjUxczE0LjkxLDEuMywyMC4xNywzLjg4YzUuMjYsMi41OSw5LjI2LDUuNzQsMTEuOTksOS40NSwyLjczLDMuNzEsNC4yOSw3LjM4LDQuNjgsMTEuMDIuMTksMS44Mi0uNTgsMi45NC0yLjM0LDMuMzYtLjIsMC0uNDkuMDctLjg4LjIxLS45OC4yOC0xLjk1LjQyLTIuOTIuNDJzLTEuODUtLjQ5LTIuNjMtMS40N2MtMi4zNC0zLjUtNi43My01LjI1LTEzLjE2LTUuMjUtMy4xMiwwLTUuMjYsMS41NC02LjQzLDQuNjItMS4xNywzLjA4LTIuMjQsNy0zLjIyLDExLjc2LTEuMTcsNS4wNC0yLjgzLDEwLjYtNC45NywxNi42OS0yLjE1LDYuMDktNS42LDEyLjAxLTEwLjM4LDE3Ljc0LTQuNzgsNS43NC0xMS42NSwxMC42NC0yMC42MSwxNC43LTguOTcsNC4wNi0yMC45NSw2LjU4LTM1Ljk2LDcuNTYtMS45NS4xNC0zLjE3LjQ5LTMuNjUsMS4wNS0uNDkuNTYtLjczLDEuMTItLjczLDEuNjh2MTcuODVjMCw0Ljc2LDIuMDUsOC4xMiw2LjE0LDEwLjA4LDQuMDksMS45NiwxMS4yMSwyLjk0LDIxLjM0LDIuOTQsMS4zNiwwLDIuNDQuMjgsMy4yMi44NC43OC41NiwxLjE3LDEuMTksMS4xNywxLjg5LDAsMi4yNC0xLjQ2LDMuMzYtNC4zOSwzLjM2LTQuODcsMC0xMS41NS0uMTQtMjAuMDItLjQyLTguNDgtLjI4LTE2LjQyLS40Mi0yMy44My0uNDItNC44NywwLTEwLjI4LjA3LTE2LjIyLjIxLTUuOTUuMTQtMTEuNi4yOC0xNi45Ni40Mi01LjM2LjE0LTkuNi4yMS0xMi43Mi4yMVoiLz4KPC9zdmc%2B&link=https%3A%2F%2Fgithub.com%2Fjakub-jedrusiak%2FpsyFrames)
+
+**psyFrame URL:**
+``` http
+https://jakub-jedrusiak.github.io/mars-ib-cat/
+```
+
+A standalone, self-contained Computerised Adaptive Test (CAT) for assessing inductive reasoning abilities based on the MaRs-IB item bank (Cherchia, Fuhrmann et al., 2019) and a predefined IRT model (Zorowitz et al., 2024). This test is compatible with psyFrames – see [psyFrames](https://github.com/jakub-jedrusiak/psyFrames) for more info and usage options.
 
 ## Overview
 
@@ -19,7 +26,7 @@ Assessment results are provided in the following JSON structure:
 
 ```javascript
 {
-  type: "MARS_RESULTS",
+  type: "psyframe_result",
   data: {
     theta: number,           // Ability estimate (typically -4 to +4)
     sem: number,             // Standard Error of Measurement
@@ -56,9 +63,13 @@ Each response in the `responses` array contains:
 
 ## Usage Options
 
-Generally, you can use this test by directly opening the website in the browser or embeding it as an iFrame in your system of choice (pre-made implementations below). Then you need to setup your system to save the data sent through .
+Generally, you can use this test by directly opening the website in the browser or embeding it as a psyFrame into one of compatible survey platforms (e.g., Qualtrics, LimeSurvey).
 
-### Option 1: Direct Browser Usage
+### Option 1: psyFrame
+
+See [psyFrames](https://github.com/jakub-jedrusiak/psyFrames) for guides on how to embed this test into Qualtrics, LimeSurvey and others, including your custom system.
+
+### Option 2: Direct Browser Usage
 
 Open the test directly in your browser and download results as JSON:
 
@@ -77,7 +88,7 @@ Import the MaRs-IB as a question group into LimeSurvey for seamless integration 
 2. Import the provided `LimeSurveyQuestionGroup.lsg` file
 3. Results are automatically stored in LimeSurvey's response database
 
-At completion, the test sends assessment data to the parent window via postMessage API, making it easy to embed as an iFrame within surveys or other applications.
+At completion, the test sends assessment data to the parent window via postMessage API, making it easy to embed as an iFrame within surveys or other applications. During runtime it also posts `psyframe_resize` messages with current iframe height so parent systems can resize the container and avoid internal scrolling.
 
 When embedding the test, you can pass the same URL parameters on the iframe `src` to control the stopping rules, for example `goalReliability`, `minItems`, and `maxItems`.
 
@@ -126,8 +137,14 @@ window.addEventListener("message", (event) => {
 
   const message = event.data;
 
+  // Optional: keep iframe height synchronized with test content
+  if (message.type === "psyframe_resize" && Number.isFinite(message.height)) {
+    iframe.style.height = `${Math.max(240, Math.round(message.height))}px`;
+    return;
+  }
+
   // Only react to actual MaRs results
-  if (message.type !== "MARS_RESULTS") {
+  if (message.type !== "psyframe_result") {
     return;
   }
 
@@ -215,7 +232,7 @@ The UI was based on the [original Gorilla experiment](https://app.gorilla.sc/ope
 
 ```json
 {
-  "type": "MARS_RESULTS",
+  "type": "psyframe_result",
   "data": {
     "theta": 0.45,
     "sem": 0.289,
