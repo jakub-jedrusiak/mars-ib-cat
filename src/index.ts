@@ -992,6 +992,33 @@ startTestButton.addEventListener("click", () => {
   })();
 });
 
+const reportInitialIframeHeight = () => {
+  if (!isInIframe) {
+    return;
+  }
+
+  ensureAppResizeObserver();
+  scheduleIframeHeightReport(true);
+
+  requestAnimationFrame(() => {
+    scheduleIframeHeightReport(true);
+  });
+
+  setTimeout(() => {
+    scheduleIframeHeightReport(false);
+  }, 200);
+};
+
+reportInitialIframeHeight();
+
+window.addEventListener(
+  "load",
+  () => {
+    reportInitialIframeHeight();
+  },
+  { once: true },
+);
+
 void preloadAllAssets();
 
 window.addEventListener("beforeunload", () => {
